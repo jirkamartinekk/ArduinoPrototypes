@@ -237,16 +237,26 @@ void setup() {
   display.setTextColor(SSD1306_WHITE);        //white text
   display.setCursor(0,0);
 
+  center_eyes();
   sleep();
+  delay(2500);
+  wakeup();
+  delay(3000);
 }
 
 void loop() {
 
   //wakeup();
-  //move_right_big_eye();
-  //move_left_big_eye();
-  //blink(10);
-  //happy_eye(); 
+  move_right_big_eye();
+  delay(1500);
+  move_left_big_eye();
+  delay(1500);
+  blink(10);
+  delay(1000);
+  happy_eye(); 
+  delay(1000);
+  blink(10);
+  delay(1000);
   //sleep();
 
 }
