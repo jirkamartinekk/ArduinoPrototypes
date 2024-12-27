@@ -11,92 +11,161 @@
 #define OLED_RESET     -1
 #define BME280_I2C_ADDRESS 0x76
 
-#define SENSOR_CO_PIN A0
+#define SENSOR_GAS_PIN 34
 
 Adafruit_BME280 bme;
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+int sensor_gas_value;
+bool status_bme;
 
-#define SEALEVELPRESSURE_HPA (1013.25)
+// Definice struktury bme280Data na začátku kódu
+struct bme280Data {
+  float temperature;
+  float humidity;
+  float atmospheric_pressure;
+};
+
+struct sensorStatus{
+  bool status_bme;
+  bool status_gas;
+  bool status_display;
+  bool wifi;
+};
+
+bme280Data data;
+sensorStatus component_status;
 
 void setup() {
-  bool status_bme, status_mq5, status_display, status_GP2Y1010AU0F;
 
   Serial.begin(115200);
 
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  // SSD1306_SWITCHCAPVCC = generování napětí pro displej z 3.3V
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
   }
 
-  pinMode(SENSOR_CO_PIN, INPUT);
-  //status_bme = bme.begin(BME280_I2C_ADDRESS);
+  pinMode(SENSOR_GAS_PIN, INPUT);
+  status_bme = bme.begin(BME280_I2C_ADDRESS);
 
   display.clearDisplay();
   display.setTextColor(WHITE);
 
-    //booting_diplay();
-
-  delay(5000);
-
+  booting_diplay();
 }
 
 void loop() {
+  data = get_data_sensor_bme280(); // Uložení dat do globální proměnné
+  sensor_gas_value = get_data_sensor_gas();
+  showTerminal();
+  showDisplay();
 
-
-
-
+  //delay(300000);
+  delay(10000);
 }
 
 void booting_diplay(){
   int i = 1;
+  display.setTextSize(2);
 
-  for(i; i<=5; i++){
+  for(i; i<=3; i++){
     display.clearDisplay();
-    display.setCursor(34, 28);
+    display.setCursor(5, 22);
     display.print("Booting");
     display.display();
     delay(1000);
     display.clearDisplay();
-    display.setCursor(34, 28);
+    display.setCursor(5, 22);
     display.print("Booting.");
     display.display();
     delay(1000);
     display.clearDisplay();
-    display.setCursor(34, 28);
+    display.setCursor(5, 22);
     display.print("Booting..");
     display.display();
     delay(1000);
     display.clearDisplay();
-    display.setCursor(34, 28);
+    display.setCursor(5, 22);
     display.print("Booting...");
     display.display();
     delay(1000);
   }
 
   display.clearDisplay();
+  display.setCursor(39, 22);
+  display.print("Done!");
+  display.display();
+  delay(1000);
+  display.clearDisplay();
+  display.display();
 }
 
-void get_data_sensor_CO(){
-  float sensor_CO_value;
+void showDisplay(){
+  display.setTextSize(1);
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Teplota: ");
+  display.print(data.temperature);
+  display.print((char)247);
+  display.println("C");
+  display.setCursor(0, 10);
+  display.print("Vlhkost: ");
+  display.print(data.humidity);
+  display.println("%");
+  display.setCursor(0, 20);
+  display.print("Tlak:    ");
+  display.print(data.atmospheric_pressure / 100.0F);
+  display.println("hPa");
+  display.setCursor(0, 30);
+  display.print("Castice: ");
+  display.print(sensor_gas_value);
+  display.println("ppm");
 
-  sensor_CO_value = analogRead(SENSOR_CO_PIN);
+  display.setCursor(0, 45);
+  display.println("version 1.0");
+  if(component_status.wifi){
+    display.println("WiFi connected");
+  }else{
+    display.println("WiFi disconnected");
+  }
 
-  return sensor_CO_value;
+
+  display.display();
 }
 
-void get_data_sensor_bme280(){
-  float temperature, humidity, atmospheric_pressure;
+void showTerminal(){
+  Serial.print("Teplota: ");
+  Serial.print(data.temperature);
+  Serial.println("°C");
 
-  temperature = bme.readTemperature();
-  humidity = bme.readHumidity();
-  atmospheric_pressure = bme.readPressure();
+  Serial.print("Vlhkost: ");
+  Serial.print(data.humidity);
+  Serial.println("%");
 
-  return temperature, humidity, atmospheric_pressure;
+  Serial.print("Tlak: ");
+  Serial.print(data.atmospheric_pressure / 100.0F);
+  Serial.println("hPa");
+
+  Serial.print("Koncentrace částic: ");
+  Serial.print(sensor_gas_value);
+  Serial.println("ppm");
 }
 
-void get_data_sensor_GP2Y1010AU0F(){
-  float ;
+int get_data_sensor_gas(){
+  int sensor_gas_value;
 
+  sensor_gas_value = analogRead(SENSOR_GAS_PIN);
+
+  return sensor_gas_value;
+}
+
+bme280Data get_data_sensor_bme280() {
+  bme280Data data;
+
+  data.temperature = bme.readTemperature();
+  data.humidity = bme.readHumidity();
+  data.atmospheric_pressure = bme.readPressure();
+
+  return data;
 }
